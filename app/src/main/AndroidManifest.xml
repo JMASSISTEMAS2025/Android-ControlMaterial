@@ -19,6 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ControlMaterial11"
         android:largeHeap="true"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
 

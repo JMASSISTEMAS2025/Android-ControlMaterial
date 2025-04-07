@@ -3,12 +3,11 @@ package com.example.controlmaterial11;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-
+import com.example.controlmaterial11.GenerarReporteActivity;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -62,12 +61,10 @@ public class DrawerBaseActivity extends AppCompatActivity implements NavigationV
         View headerView = navigationView.getHeaderView(0);
         TextView txtUsuario = headerView.findViewById(R.id.txt_usuario);
 
-// Obtener el nombre de usuario desde SharedPreferences
+        // Obtener el nombre de usuario desde SharedPreferences
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userName = sharedPreferences.getString("user_name", "Nombre Usuario"); // Valor predeterminado
         txtUsuario.setText(userName);
-
-
     }
 
     @Override
@@ -97,7 +94,7 @@ public class DrawerBaseActivity extends AppCompatActivity implements NavigationV
         if (itemId == R.id.nav_inicio) {
             iniciarNuevaActividad(InicioActivity.class);
         } else if (itemId == R.id.nav_generar_reporte) {
-            iniciarNuevaActividad(GenerarreporteActivity.class);
+            iniciarNuevaActividad(GenerarReporteActivity.class);
         } else if (itemId == R.id.eliminar_reporte) {
             iniciarNuevaActividad(Eliminar_reporteActivity.class);
         } else if (itemId == R.id.editar_reporte) {
@@ -105,7 +102,7 @@ public class DrawerBaseActivity extends AppCompatActivity implements NavigationV
         } else if (itemId == R.id.informacion) {
             iniciarNuevaActividad(Acerca_de_Activity.class);
         } else if (itemId == R.id.sincronizar_reportes) {
-            iniciarNuevaActividad(SincronizarActivity.class);
+            //iniciarNuevaActividad(SincronizarActivity.class);
         }
     }
 

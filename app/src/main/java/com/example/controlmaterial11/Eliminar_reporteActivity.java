@@ -1,20 +1,21 @@
 package com.example.controlmaterial11;
 
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.example.controlmaterial11.databinding.ActivityEliminarReporteBinding;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class Eliminar_reporteActivity extends DrawerBaseActivity {
+public class Eliminar_reporteActivity extends AppCompatActivity {
     ActivityEliminarReporteBinding eliminarReporteBinding;
     DBHelper dbHelper; // Instancia de DBHelper
     private int id_ticketActual = -1;  // Variable para almacenar el ID del reporte actual
@@ -23,115 +24,104 @@ public class Eliminar_reporteActivity extends DrawerBaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        eliminarReporteBinding = eliminarReporteBinding.inflate(getLayoutInflater());
+        eliminarReporteBinding = ActivityEliminarReporteBinding.inflate(getLayoutInflater());
         setContentView(eliminarReporteBinding.getRoot());
 
         // Inicializar DBHelper
         dbHelper = new DBHelper(this);
 
         // Configurar el botón de búsqueda
-        eliminarReporteBinding.buttonBuscar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Obtener el ID del ticket ingresado
-                String idTicketStr = eliminarReporteBinding.editTextBusqueda.getText().toString().trim();
-                if (!idTicketStr.isEmpty()) {
-                    int id_ticket = Integer.parseInt(idTicketStr);
-                    buscarYMostrarReporte(id_ticket);
-                } else {
-                    Toast.makeText(Eliminar_reporteActivity.this, "Por favor ingresa un ID de ticket", Toast.LENGTH_SHORT).show();
-                }
+        eliminarReporteBinding.buttonBuscar.setOnClickListener(v -> {
+            // Obtener el ID del ticket ingresado
+            String idTicketStr = eliminarReporteBinding.editTextBusqueda.getText().toString().trim();
+            if (!idTicketStr.isEmpty()) {
+                int id_ticket = Integer.parseInt(idTicketStr);
+                buscarYMostrarReporte(id_ticket);
+            } else {
+                Toast.makeText(Eliminar_reporteActivity.this, "Por favor ingresa un ID de ticket", Toast.LENGTH_SHORT).show();
             }
         });
 
         // Configurar el botón de eliminar
-        eliminarReporteBinding.btnEliminarReporte.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mostrarDialogoConfirmacion();
-            }
-        });
+        eliminarReporteBinding.btnEliminarReporte.setOnClickListener(v -> mostrarDialogoConfirmacion());
+
+        // Configurar el Spinner de departamentos
         spinnerDepartamento = findViewById(R.id.spinner);
-
-        // Obtener los departamentos de la base de datos
-        List<String> departamentos = dbHelper.getDepartamentos();
-
-        // Crear un adaptador para el spinner usando el diseño personalizado
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                this,
-                R.layout.spinner_item, // Usar el archivo de diseño del spinner
-                departamentos
-        );
-
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerDepartamento.setAdapter(adapter);
-        
+        cargarDepartamentos();
     }
 
-    private void buscarYMostrarReporte(int id_ticket) {
-        Cursor cursor = dbHelper.buscarReporte(id_ticket);
+    // Método para cargar departamentos en el Spinner
+    private void cargarDepartamentos() {
+        try {
+            String response = dbHelper.sendGetRequest(DBHelper.BASE_URL + "get_departments.php");
+            JSONArray jsonArray = new JSONArray(response);
 
-        if (cursor != null && cursor.moveToFirst()) {
+            List<String> departamentos = new ArrayList<>();
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                departamentos.add(jsonObject.getString("Nombre_Departamento"));
+            }
+
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    this,
+                    android.R.layout.simple_spinner_item,
+                    departamentos
+            );
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerDepartamento.setAdapter(adapter);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error al cargar departamentos", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Método para buscar y mostrar un reporte por ID
+    private void buscarYMostrarReporte(int id_ticket) {
+        try {
+            String response = dbHelper.sendGetRequest(DBHelper.BASE_URL + "get_report_by_id.php?id_ticket=" + id_ticket);
+            JSONObject jsonObject = new JSONObject(response);
+
             id_ticketActual = id_ticket;  // Guardar el ID del ticket actual
 
             // Extraer y mostrar los datos del reporte
-            String Id_ticket = cursor.getString(cursor.getColumnIndexOrThrow("Id_ticket"));
-            String fechaAsignacion = cursor.getString(cursor.getColumnIndexOrThrow("Fecha_asignacion"));
-            String fechaReparacion = cursor.getString(cursor.getColumnIndexOrThrow("Fecha_reparacion"));
-            String colonia = cursor.getString(cursor.getColumnIndexOrThrow("Colonia"));
-            String tipoSuelo = cursor.getString(cursor.getColumnIndexOrThrow("Tipo_suelo"));
-            String direccion = cursor.getString(cursor.getColumnIndexOrThrow("Direccion"));
-            String reportante = cursor.getString(cursor.getColumnIndexOrThrow("Reportante"));
-            String telefonoReportante = cursor.getString(cursor.getColumnIndexOrThrow("Telefono_reportante"));
-            String reparador = cursor.getString(cursor.getColumnIndexOrThrow("Reparador"));
-            String material = cursor.getString(cursor.getColumnIndexOrThrow("Material"));
-            String departamento = cursor.getString(cursor.getColumnIndexOrThrow("Departamento"));  // Asegúrate de tener esta columna
+            eliminarReporteBinding.txtTicket.setText(jsonObject.getString("Id_ticket"));
+            eliminarReporteBinding.txtFechaAsignacion.setText(jsonObject.getString("Fecha_asignacion"));
+            eliminarReporteBinding.txtFechaReparacion.setText(jsonObject.getString("Fecha_reparacion"));
+            eliminarReporteBinding.txtColonia.setText(jsonObject.getString("Colonia"));
+            eliminarReporteBinding.txtTipoSuelo.setText(jsonObject.getString("Tipo_suelo"));
+            eliminarReporteBinding.direccion.setText(jsonObject.getString("Direccion"));
+            eliminarReporteBinding.txtReportante.setText(jsonObject.getString("Reportante"));
+            eliminarReporteBinding.txtTelReportante.setText(jsonObject.getString("Telefono_reportante"));
+            eliminarReporteBinding.txtReparador.setText(jsonObject.getString("Reparador"));
+            eliminarReporteBinding.txtMaterial.setText(jsonObject.getString("Material"));
 
-            byte[] imagenAntesBlob = cursor.getBlob(cursor.getColumnIndexOrThrow("Imagen_antes"));
-            byte[] imagenDespuesBlob = cursor.getBlob(cursor.getColumnIndexOrThrow("Imagen_despues"));
+            // Cargar las imágenes si existen
+            String imagenAntesBase64 = jsonObject.optString("Imagen_antes", null);
+            String imagenDespuesBase64 = jsonObject.optString("Imagen_despues", null);
 
-            eliminarReporteBinding.txtTicket.setText(Id_ticket);
-            eliminarReporteBinding.txtFechaAsignacion.setText(fechaAsignacion);
-            eliminarReporteBinding.txtFechaReparacion.setText(fechaReparacion);
-            eliminarReporteBinding.txtColonia.setText(colonia);
-            eliminarReporteBinding.txtTipoSuelo.setText(tipoSuelo);
-            eliminarReporteBinding.direccion.setText(direccion);
-            eliminarReporteBinding.txtReportante.setText(reportante);
-            eliminarReporteBinding.txtTelReportante.setText(telefonoReportante);
-            eliminarReporteBinding.txtReparador.setText(reparador);
-            eliminarReporteBinding.txtMaterial.setText(material);
-
-            // Cargar las imágenes
-            if (imagenAntesBlob != null) {
-                Bitmap bitmapAntes = BitmapFactory.decodeByteArray(imagenAntesBlob, 0, imagenAntesBlob.length);
-                eliminarReporteBinding.imageViewEvidenciaAntes.setImageBitmap(bitmapAntes);
+            if (imagenAntesBase64 != null) {
+                byte[] imagenAntesBytes = android.util.Base64.decode(imagenAntesBase64, android.util.Base64.DEFAULT);
+                Glide.with(this).load(imagenAntesBytes).into(eliminarReporteBinding.imageViewEvidenciaAntes);
             } else {
                 eliminarReporteBinding.imageViewEvidenciaAntes.setImageResource(R.drawable.info);
             }
 
-            if (imagenDespuesBlob != null) {
-                Bitmap bitmapDespues = BitmapFactory.decodeByteArray(imagenDespuesBlob, 0, imagenDespuesBlob.length);
-                eliminarReporteBinding.imageViewEvidenciaDespues.setImageBitmap(bitmapDespues);
+            if (imagenDespuesBase64 != null) {
+                byte[] imagenDespuesBytes = android.util.Base64.decode(imagenDespuesBase64, android.util.Base64.DEFAULT);
+                Glide.with(this).load(imagenDespuesBytes).into(eliminarReporteBinding.imageViewEvidenciaDespues);
             } else {
                 eliminarReporteBinding.imageViewEvidenciaDespues.setImageResource(R.drawable.info);
             }
 
             // Seleccionar el valor correcto en el Spinner de departamentos
-            if (departamento != null) {
-                int position = ((ArrayAdapter<String>) spinnerDepartamento.getAdapter()).getPosition(departamento);
-                if (position >= 0) {
-                    spinnerDepartamento.setSelection(position);
-                }
+            String departamento = jsonObject.getString("Departamento");
+            int position = ((ArrayAdapter<String>) spinnerDepartamento.getAdapter()).getPosition(departamento);
+            if (position >= 0) {
+                spinnerDepartamento.setSelection(position);
             }
-
-            cursor.close();
-        } else {
+        } catch (Exception e) {
+            e.printStackTrace();
             Toast.makeText(this, "Reporte no encontrado", Toast.LENGTH_SHORT).show();
-
-            // Cierra el cursor si es null
-            if (cursor != null) {
-                cursor.close();
-            }
         }
     }
 
@@ -141,13 +131,8 @@ public class Eliminar_reporteActivity extends DrawerBaseActivity {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Confirmar eliminación");
             builder.setMessage("¿Deseas eliminar este reporte?");
-            builder.setPositiveButton("Sí", (dialog, which) -> {
-                eliminarReporte(); // Llamar al método para eliminar el reporte
-            });
-            builder.setNegativeButton("No", (dialog, which) -> {
-                // Cerrar el diálogo sin hacer nada
-                dialog.dismiss();
-            });
+            builder.setPositiveButton("Sí", (dialog, which) -> eliminarReporte()); // Llamar al método para eliminar el reporte
+            builder.setNegativeButton("No", (dialog, which) -> dialog.dismiss());
 
             // Mostrar el cuadro de diálogo
             builder.create().show();
@@ -159,26 +144,34 @@ public class Eliminar_reporteActivity extends DrawerBaseActivity {
     // Método para eliminar el reporte actual
     private void eliminarReporte() {
         if (id_ticketActual != -1) {  // Verificar que hay un reporte seleccionado
-            boolean resultado = dbHelper.eliminarReporte(id_ticketActual); // Llama al método de DBHelper para eliminar el reporte
-            if (resultado) {
-                // Limpiar los campos si el reporte fue eliminado
-                eliminarReporteBinding.editTextBusqueda.setText("");
-                eliminarReporteBinding.txtTicket.setText("");
-                eliminarReporteBinding.txtFechaAsignacion.setText("");
-                eliminarReporteBinding.txtFechaReparacion.setText("");
-                eliminarReporteBinding.txtColonia.setText("");
-                eliminarReporteBinding.txtTipoSuelo.setText("");
-                eliminarReporteBinding.direccion.setText("");
-                eliminarReporteBinding.txtReportante.setText("");
-                eliminarReporteBinding.txtTelReportante.setText("");
-                eliminarReporteBinding.txtReparador.setText("");
-                eliminarReporteBinding.txtMaterial.setText("");
-                eliminarReporteBinding.imageViewEvidenciaAntes.setImageResource(0);
-                eliminarReporteBinding.imageViewEvidenciaDespues.setImageResource(0);
+            try {
+                JSONObject json = new JSONObject();
+                json.put("id_ticket", id_ticketActual);
 
-                Toast.makeText(this, "Reporte eliminado exitosamente", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Error al eliminar el reporte", Toast.LENGTH_SHORT).show();
+                String response = dbHelper.sendPostRequest(DBHelper.BASE_URL + "delete_report.php", json.toString());
+                if (response.contains("correctamente")) {
+                    // Limpiar los campos si el reporte fue eliminado
+                    eliminarReporteBinding.editTextBusqueda.setText("");
+                    eliminarReporteBinding.txtTicket.setText("");
+                    eliminarReporteBinding.txtFechaAsignacion.setText("");
+                    eliminarReporteBinding.txtFechaReparacion.setText("");
+                    eliminarReporteBinding.txtColonia.setText("");
+                    eliminarReporteBinding.txtTipoSuelo.setText("");
+                    eliminarReporteBinding.direccion.setText("");
+                    eliminarReporteBinding.txtReportante.setText("");
+                    eliminarReporteBinding.txtTelReportante.setText("");
+                    eliminarReporteBinding.txtReparador.setText("");
+                    eliminarReporteBinding.txtMaterial.setText("");
+                    eliminarReporteBinding.imageViewEvidenciaAntes.setImageResource(0);
+                    eliminarReporteBinding.imageViewEvidenciaDespues.setImageResource(0);
+
+                    Toast.makeText(this, "Reporte eliminado exitosamente", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Error al eliminar el reporte", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error al enviar los datos", Toast.LENGTH_SHORT).show();
             }
         } else {
             Toast.makeText(this, "Primero busca un reporte para eliminar", Toast.LENGTH_SHORT).show();

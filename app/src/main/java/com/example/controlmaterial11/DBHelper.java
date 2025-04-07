@@ -77,8 +77,8 @@ public class DBHelper {
     public boolean verificarUsuario(String usuario, String clave) {
         try {
             JSONObject json = new JSONObject();
-            json.put("usuario", usuario);
-            json.put("contraseña", clave);
+            json.put("Usuario", usuario);
+            json.put("Contraseña", clave);
 
             String response = sendPostRequest(BASE_URL + "login.php", json.toString());
             JSONObject jsonResponse = new JSONObject(response);
@@ -163,31 +163,45 @@ public class DBHelper {
 
     // Método para enviar una solicitud POST
     public String sendPostRequest(String urlString, String jsonInputString) {
+        HttpURLConnection connection = null;
         try {
             URL url = new URL(urlString);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            Log.d("DBHelper", "URL: " + urlString); // Log de la URL
+            Log.d("DBHelper", "Datos enviados: " + jsonInputString); // Log de los datos enviados
+
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json; utf-8");
             connection.setRequestProperty("Accept", "application/json");
             connection.setDoOutput(true);
 
+            // Enviar los datos JSON al servidor
             try (OutputStream os = connection.getOutputStream()) {
                 byte[] input = jsonInputString.getBytes("utf-8");
                 os.write(input, 0, input.length);
             }
 
+            // Leer la respuesta del servidor
             int responseCode = connection.getResponseCode();
+            Log.d("DBHelper", "Código de respuesta HTTP: " + responseCode); // Log del código de respuesta
+
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 try (InputStream is = connection.getInputStream()) {
-                    return readStream(is);
+                    String response = readStream(is);
+                    Log.d("DBHelper", "Respuesta del servidor: " + response); // Log de la respuesta
+                    return response;
                 }
             } else {
-                Log.e("DBHelper", "Error en la solicitud POST: Código " + responseCode);
+                Log.e("DBHelper", "Código de error HTTP: " + responseCode);
                 return "";
             }
         } catch (Exception e) {
             Log.e("DBHelper", "Error en la solicitud POST: " + e.getMessage());
             return "";
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
