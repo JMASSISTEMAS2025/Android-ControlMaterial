@@ -41,3 +41,7 @@ CREATE TABLE Reportes (
     Imagen_despues VARBINARY(MAX),
     FOREIGN KEY (Id_Usuario) REFERENCES Login(Id_Usuario)
 );
+
+
+
+
