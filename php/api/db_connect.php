@@ -13,5 +13,8 @@ $conn = sqlsrv_connect($serverName, $connectionOptions);
 
 if ($conn === false) {
     die(json_encode(array("error" => "Error al conectar a la base de datos: " . print_r(sqlsrv_errors(), true))));
+} else
+{
+    echo $conn;
 }
 ?>
